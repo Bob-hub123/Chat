@@ -1,0 +1,10 @@
+# 核心依赖
+fastapi>=0.115
+websockets>=14.0
+
+# uvicorn[standard] 含 uvloop / httptools / watchfiles（Rust、C 扩展）
+# 官方 CPython（Windows/macOS/Linux 均可）直接装没问题；
+# MSYS2 MinGW 的 Python 建出来的 venv 没有对应 wheel，会尝试源码编译并失败，
+# 那种环境请注释掉下面这行、改用再下面那行纯 Python 版（性能略低但能跑）。
+uvicorn[standard]>=0.32
+# uvicorn>=0.32

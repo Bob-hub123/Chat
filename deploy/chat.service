@@ -1,0 +1,49 @@
+# /etc/systemd/system/chat.service
+#
+# 进程守护：进程挂了自动拉起、开机自启、日志进 journald。
+# 注意 ExecStart **不能加 --workers**：成员表与历史都在进程内存里，
+# 多 worker 会让同一房间的用户互相看不见（除非 Nginx 配 ip_hash 做会话粘性）。
+
+[Unit]
+Description=Chat Platform (FastAPI + WebSocket)
+Documentation=file:///opt/chat/docs/design-v1.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=chat
+Group=chat
+WorkingDirectory=/opt/chat/server
+
+Environment=PYTHONUNBUFFERED=1
+Environment=LOG_LEVEL=INFO
+Environment=HOST=127.0.0.1
+Environment=PORT=3000
+Environment=MAX_CONNECTIONS=200
+
+# 必须用 venv 里的绝对路径，否则 systemd 找不到依赖
+ExecStart=/opt/chat/server/.venv/bin/uvicorn app.main:app \
+          --host 127.0.0.1 --port 3000 --ws websockets
+
+Restart=always
+RestartSec=3
+# 防止反复崩溃时疯狂重启：60 秒内最多重启 5 次
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=chat
+
+# ---------- 安全加固 ----------
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+
+[Install]
+WantedBy=multi-user.target
